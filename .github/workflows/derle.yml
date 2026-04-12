@@ -1,0 +1,34 @@
+name: Hile ve Injector Derleme
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Manuel olarak da başlatabilmen için
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Kodları Çek
+      uses: actions/checkout@v4
+
+    - name: MSBuild Kurulumu
+      uses: microsoft/setup-msbuild@v2
+
+    - name: NuGet Paketlerini Geri Yükle
+      # Projende harici kütüphane varsa eksikleri tamamlar
+      run: nuget restore MyProject.sln 
+
+    - name: Injector ve DLL Derle (Release x64)
+      run: |
+        msbuild MyProject.sln /p:Configuration=Release /p:Platform=x64 /p:OutputPath=..\build_output\
+
+    - name: Derlenen Dosyaları Paketle ve Sun
+      uses: actions/upload-artifact@v4
+      with:
+        name: Hile-Paketi
+        path: |
+          build_output/*.exe
+          build_output/*.dll
+          
