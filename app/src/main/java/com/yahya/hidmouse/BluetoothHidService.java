@@ -81,7 +81,14 @@ public class BluetoothHidService {
         }
     };
 
-    // MainActivity'nin çağırdığı asıl fonksiyon tam olarak bu isimde olmalı:
+    // Menüden seçilen cihaza HID bağlantı isteği atar
+    public void connectToDevice(BluetoothDevice device) {
+        if (bluetoothHidDevice != null) {
+            bluetoothHidDevice.connect(device);
+            this.connectedDevice = device;
+        }
+    }
+
     public void sendInput(byte buttons, byte dx, byte dy) {
         if (bluetoothHidDevice != null && connectedDevice != null) {
             byte[] report = new byte[]{buttons, dx, dy, 0};
