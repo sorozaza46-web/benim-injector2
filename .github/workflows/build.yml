@@ -19,11 +19,13 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # Gradle'ı sunucuya temiz bir şekilde kurar
+    # Bulduğun 3. madde uyarınca: Gradle sürümünü en kararlı olan 8.7'ye sabitliyoruz
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.7'
 
-    # Hatalı çalışan ./gradlew yerine doğrudan kurulu Gradle motorunu tetikliyoruz
+    # Kararlı sürüm kurulduğu için ./gradlew karmaşasına girmeden doğrudan derliyoruz
     - name: Build with Gradle
       run: gradle assembleDebug --no-daemon
 
