@@ -6,7 +6,8 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PRESERVE_OBJECT_REFS)
+    // Gradle 9.5.1 ile tam uyumlu olan standart moda geri çekiyoruz:
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
