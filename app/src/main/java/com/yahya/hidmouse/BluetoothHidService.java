@@ -81,11 +81,18 @@ public class BluetoothHidService {
         }
     };
 
-    // Menüden seçilen cihaza HID bağlantı isteği atar
     public void connectToDevice(BluetoothDevice device) {
         if (bluetoothHidDevice != null) {
             bluetoothHidDevice.connect(device);
             this.connectedDevice = device;
+        }
+    }
+
+    // Akış sonlandığında veya uygulama kapandığında TV bağlantısını koparır
+    public void disconnectDevice() {
+        if (bluetoothHidDevice != null && connectedDevice != null) {
+            bluetoothHidDevice.disconnect(connectedDevice);
+            connectedDevice = null;
         }
     }
 
