@@ -2,22 +2,39 @@ package com.yahya.hidmouse;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import java.util.ArrayList;
+import java.util.Set;
+
 public class MainActivity extends AppCompatActivity {
 
     private BluetoothHidService hidService;
+    private BluetoothAdapter bluetoothAdapter;
     private float lastX = 0, lastY = 0;
     private byte currentButtons = 0;
     private static final int PERMISSION_REQUEST_CODE = 202;
+
+    private ArrayList<BluetoothDevice> deviceList = new ArrayList<>();
+    private ArrayList<String> deviceNames = new ArrayList<>();
+    private ArrayAdapter<String> listAdapter;
+    
+    private ListView listView;
+    private TextView txtStatus;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -25,33 +42,36 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Android 11 (API 30) ve altı cihazlar için uygun izin kontrolü
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12 ve üzeri için
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{
-                        Manifest.permission.BLUETOOTH_CONNECT,
-                        Manifest.permission.BLUETOOTH_ADVERTISE
-                }, PERMISSION_REQUEST_CODE);
-            } else {
-                initHidService();
-            }
-        } else {
-            // Senin cihazın (Android 11) için konum izni üzerinden Bluetooth yetkilendirmesi
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                }, PERMISSION_REQUEST_CODE);
-            } else {
-                initHidService();
-            }
-        }
-
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        
+        Button btnScan = findViewById(R.id.btn_scan);
+        listView = findViewById(R.id.device_list);
+        txtStatus = findViewById(R.id.txt_status);
         View trackpad = findViewById(R.id.trackpad);
         View btnLeft = findViewById(R.id.btn_left_click);
         View btnRight = findViewById(R.id.btn_right_click);
 
+        listAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceNames);
+        listView.setAdapter(listAdapter);
+
+        // İzin kontrol mekanizması (Android 11 Redmi uyumlu)
+        checkPermissionsAndInit();
+
+        // Cihazları Listele Butonu tetikleyicisi
+        btnScan.setOnClickListener(v -> showPairedDevices());
+
+        // Listeden cihaza tıklandığında bağlanma tetikleyicisi
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            if (hidService != null && position < deviceList.size()) {
+                BluetoothDevice selectedDevice = deviceList.get(position);
+                @SuppressLint("MissingPermission") String name = selectedDevice.getName();
+                txtStatus.setText("Durum: Bağlanılıyor -> " + name);
+                hidService.connectToDevice(selectedDevice);
+                Toast.makeText(MainActivity.this, name + " Cihazına HID İsteği Gönderildi!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Trackpad hareket kodları
         if (trackpad != null) {
             trackpad.setOnTouchListener((v, event) -> {
                 if (hidService == null) return false;
@@ -77,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        // Tıklama buton kodları
         if (btnLeft != null) {
             btnLeft.setOnTouchListener((v, event) -> {
                 if (hidService == null) return false;
@@ -106,11 +127,54 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("MissingPermission")
+    private void showPairedDevices() {
+        if (bluetoothAdapter == null) return;
+        
+        deviceList.clear();
+        deviceNames.clear();
+
+        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+        if (pairedDevices.size() > 0) {
+            for (BluetoothDevice device : pairedDevices) {
+                deviceList.add(device);
+                deviceNames.add(device.getName() + "\n" + device.getAddress());
+            }
+            listAdapter.notifyDataSetChanged();
+            txtStatus.setText("Durum: Eşleşmiş Cihazlar Listelendi");
+        } else {
+            txtStatus.setText("Durum: Eşleşmiş Cihaz Bulunamadı!");
+        }
+    }
+
+    private void checkPermissionsAndInit() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{
+                        Manifest.permission.BLUETOOTH_CONNECT,
+                        Manifest.permission.BLUETOOTH_ADVERTISE
+                }, PERMISSION_REQUEST_CODE);
+            } else {
+                initHidService();
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                }, PERMISSION_REQUEST_CODE);
+            } else {
+                initHidService();
+            }
+        }
+    }
+
     private void initHidService() {
         try {
             hidService = new BluetoothHidService(this);
+            txtStatus.setText("Durum: Bluetooth HID Hazır");
         } catch (Exception e) {
-            Toast.makeText(this, "HID Servisi Başlatılamadı!", Toast.LENGTH_SHORT).show();
+            txtStatus.setText("Durum: Servis Başlatma Hatası!");
             e.printStackTrace();
         }
     }
@@ -122,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 initHidService();
             } else {
-                Toast.makeText(this, "Bluetooth/Konum izni reddedildi. Uygulama çalışamaz.", Toast.LENGTH_LONG).show();
+                txtStatus.setText("Durum: İzin Reddedildi!");
             }
         }
     }
