@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId "com.yahya.hidmouse"
         minSdk 28
-        targetSdk 34
+        targetSdk 30 // Redmi Note 9 Pro Android 11 (API 30) ile tam uyum için
         versionCode 1
         versionName "1.0"
     }
@@ -20,7 +20,6 @@ android {
         }
     }
     
-    // Java 7 kısıtlamasını tamamen kırıp Lambda (->) desteğini açan kritik ayar:
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -28,5 +27,6 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.appcompat:appcompat:1.4.1' // Android 11 için en kararlı sürüm
+    implementation 'com.google.android.material:material:1.5.0'
 }
