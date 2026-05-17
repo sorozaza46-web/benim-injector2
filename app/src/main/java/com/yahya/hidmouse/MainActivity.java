@@ -54,13 +54,10 @@ public class MainActivity extends AppCompatActivity {
         listAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceNames);
         listView.setAdapter(listAdapter);
 
-        // İzin kontrol mekanizması (Android 11 Redmi uyumlu)
         checkPermissionsAndInit();
 
-        // Cihazları Listele Butonu tetikleyicisi
         btnScan.setOnClickListener(v -> showPairedDevices());
 
-        // Listeden cihaza tıklandığında bağlanma tetikleyicisi
         listView.setOnItemClickListener((parent, view, position, id) -> {
             if (hidService != null && position < deviceList.size()) {
                 BluetoothDevice selectedDevice = deviceList.get(position);
@@ -71,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Trackpad hareket kodları
+        // Trackpad Hareketi: Parmağını hareket ettirdikçe TV'de anlık imleç hareket eder
         if (trackpad != null) {
             trackpad.setOnTouchListener((v, event) -> {
                 if (hidService == null) return false;
@@ -84,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
                         float dx = event.getX() - lastX;
                         float dy = event.getY() - lastY;
 
+                        // TV hassasiyeti için hareket verisini -127 ile 127 arasında sınırlıyoruz
                         byte moveX = (byte) Math.max(-127, Math.min(127, dx));
                         byte moveY = (byte) Math.max(-127, Math.min(127, dy));
 
@@ -92,20 +90,23 @@ public class MainActivity extends AppCompatActivity {
                         lastX = event.getX();
                         lastY = event.getY();
                         break;
+                    case MotionEvent.ACTION_UP:
+                        // Parmak kaldırıldığında TV'ye sıfır hareketi göndererek imleci sabitliyoruz
+                        hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
+                        break;
                 }
                 return true;
             });
         }
 
-        // Tıklama buton kodları
         if (btnLeft != null) {
             btnLeft.setOnTouchListener((v, event) -> {
                 if (hidService == null) return false;
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    currentButtons |= 0x01;
+                    currentButtons |= 0x01; // Sol tık basıldı sinyali
                     hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    currentButtons &= ~0x01;
+                    currentButtons &= ~0x01; // Sol tık bırakıldı sinyali
                     hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
                 }
                 return false;
@@ -116,10 +117,10 @@ public class MainActivity extends AppCompatActivity {
             btnRight.setOnTouchListener((v, event) -> {
                 if (hidService == null) return false;
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    currentButtons |= 0x02;
+                    currentButtons |= 0x02; // Sağ tık basıldı sinyali
                     hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    currentButtons &= ~0x02;
+                    currentButtons &= ~0x02; // Sağ tık bırakıldı sinyali
                     hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
                 }
                 return false;
@@ -141,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
                 deviceNames.add(device.getName() + "\n" + device.getAddress());
             }
             listAdapter.notifyDataSetChanged();
-            txtStatus.setText("Durum: Eşleşmiş Cihazlar Listelendi");
+            txtStatus.setText("Durum: Cihazlar Listelendi");
         } else {
             txtStatus.setText("Durum: Eşleşmiş Cihaz Bulunamadı!");
         }
@@ -174,8 +175,17 @@ public class MainActivity extends AppCompatActivity {
             hidService = new BluetoothHidService(this);
             txtStatus.setText("Durum: Bluetooth HID Hazır");
         } catch (Exception e) {
-            txtStatus.setText("Durum: Servis Başlatma Hatası!");
+            txtStatus.setText("Durum: Servis Hatası!");
             e.printStackTrace();
+        }
+    }
+
+    // Akış sonlandığında (Uygulama kapatıldığında) TV bağlantısını keser ve imleci kapatır
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (hidService != null) {
+            hidService.disconnectDevice();
         }
     }
 
