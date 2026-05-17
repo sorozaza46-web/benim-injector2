@@ -62,13 +62,12 @@ public class MainActivity extends AppCompatActivity {
             if (hidService != null && position < deviceList.size()) {
                 BluetoothDevice selectedDevice = deviceList.get(position);
                 @SuppressLint("MissingPermission") String name = selectedDevice.getName();
-                txtStatus.setText("Durum: Bağlanılıyor -> " + name);
+                txtStatus.setText("Durum: HID Protokolü Tetikleniyor -> " + name);
                 hidService.connectToDevice(selectedDevice);
-                Toast.makeText(MainActivity.this, name + " Cihazına HID İsteği Gönderildi!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "TV'ye Mouse Profili Gönderildi!", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // Trackpad Hareketi: Parmağını hareket ettirdikçe TV'de anlık imleç hareket eder
         if (trackpad != null) {
             trackpad.setOnTouchListener((v, event) -> {
                 if (hidService == null) return false;
@@ -81,9 +80,9 @@ public class MainActivity extends AppCompatActivity {
                         float dx = event.getX() - lastX;
                         float dy = event.getY() - lastY;
 
-                        // TV hassasiyeti için hareket verisini -127 ile 127 arasında sınırlıyoruz
-                        byte moveX = (byte) Math.max(-127, Math.min(127, dx));
-                        byte moveY = (byte) Math.max(-127, Math.min(127, dy));
+                        // Redmi ve TV senkronizasyonu için hassasiyeti hafif artırdık (* 1.5)
+                        byte moveX = (byte) Math.max(-127, Math.min(127, dx * 1.5));
+                        byte moveY = (byte) Math.max(-127, Math.min(127, dy * 1.5));
 
                         hidService.sendInput(currentButtons, moveX, moveY);
 
@@ -91,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
                         lastY = event.getY();
                         break;
                     case MotionEvent.ACTION_UP:
-                        // Parmak kaldırıldığında TV'ye sıfır hareketi göndererek imleci sabitliyoruz
                         hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
                         break;
                 }
@@ -103,10 +101,10 @@ public class MainActivity extends AppCompatActivity {
             btnLeft.setOnTouchListener((v, event) -> {
                 if (hidService == null) return false;
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    currentButtons |= 0x01; // Sol tık basıldı sinyali
+                    currentButtons |= 0x01;
                     hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    currentButtons &= ~0x01; // Sol tık bırakıldı sinyali
+                    currentButtons &= ~0x01;
                     hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
                 }
                 return false;
@@ -117,10 +115,10 @@ public class MainActivity extends AppCompatActivity {
             btnRight.setOnTouchListener((v, event) -> {
                 if (hidService == null) return false;
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    currentButtons |= 0x02; // Sağ tık basıldı sinyali
+                    currentButtons |= 0x02;
                     hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    currentButtons &= ~0x02; // Sağ tık bırakıldı sinyali
+                    currentButtons &= ~0x02;
                     hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
                 }
                 return false;
@@ -139,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
         if (pairedDevices.size() > 0) {
             for (BluetoothDevice device : pairedDevices) {
                 deviceList.add(device);
-                deviceNames.add(device.getName() + "\n" + device.getAddress());
+                deviceNames.add(device.getName() + " (Eşleşmiş)\n" + device.getAddress());
             }
             listAdapter.notifyDataSetChanged();
             txtStatus.setText("Durum: Cihazlar Listelendi");
@@ -173,31 +171,18 @@ public class MainActivity extends AppCompatActivity {
     private void initHidService() {
         try {
             hidService = new BluetoothHidService(this);
-            txtStatus.setText("Durum: Bluetooth HID Hazır");
+            txtStatus.setText("Durum: Bluetooth HID Sürücüsü Aktif");
         } catch (Exception e) {
-            txtStatus.setText("Durum: Servis Hatası!");
+            txtStatus.setText("Durum: Servis Başlatılamadı!");
             e.printStackTrace();
         }
     }
 
-    // Akış sonlandığında (Uygulama kapatıldığında) TV bağlantısını keser ve imleci kapatır
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (hidService != null) {
             hidService.disconnectDevice();
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                initHidService();
-            } else {
-                txtStatus.setText("Durum: İzin Reddedildi!");
-            }
         }
     }
 }
