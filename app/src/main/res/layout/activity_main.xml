@@ -1,42 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/xml/android"
+<LinearLayout 
+    xmlns:android="http://schemas.github.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#121212"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#121212"> <!-- Koyu tema arka planı -->
 
-    <View
-        android:id="@+id/trackpad"
+    <!-- Başlık veya Durum Metni -->
+    <TextView
+        android:id="@+id/statusTextView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="3"
-        android:background="#1E1E1E"
-        android:layout_marginBottom="16dp" />
+        android:layout_height="wrap_content"
+        android:text="Injector Status: Ready"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"/>
 
+    <!-- İşlem Seçenekleri İçin Ağırlıklı (Weight) Alan -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="horizontal">
+        android:orientation="vertical">
+
+        <!-- Loglarda geçen margin ve hizalama hataları düzeltilmiş buton -->
+        <Button
+            android:id="@+id/btnInject"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Inject"
+            android:backgroundTint="#00E676"
+            android:textColor="#000000"
+            android:layout_marginBottom="12dp"
+            android:layout_marginEnd="0dp"/>
 
         <Button
-            android:id="@+id/btn_left_click"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="SOL TIK"
-            android:layout_marginEnd="8dp"
-            android:backgroundTint="#2E2E2E"/>
+            android:id="@+id/btnSelectProcess"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Process"
+            android:backgroundTint="#29B6F6"
+            android:textColor="#000000"
+            android:layout_marginBottom="12dp"
+            android:layout_marginEnd="0dp"/>
 
-        <Button
-            android:id="@+id/btn_right_click"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="SAĞ TIK"
-            android:layout_marginStart="8dp"
-            android:backgroundTint="#2E2E2E"/>
     </LinearLayout>
-</LinearLayout>
 
+    <!-- Alt Kısımda Sabit Duracak Bilgi Metni -->
+    <TextView
+        android:id="@+id/versionTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="v2.0 - Build Successful"
+        android:textColor="#757575"
+        android:textSize="12sp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="4dp"/>
+
+</LinearLayout>
