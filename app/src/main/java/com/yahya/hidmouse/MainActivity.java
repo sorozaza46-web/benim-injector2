@@ -18,14 +18,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Bluetooth HID servisini başlatıyoruz
         hidService = new BluetoothHidService(this);
 
         View trackpad = findViewById(R.id.trackpad);
         View btnLeft = findViewById(R.id.btn_left_click);
         View btnRight = findViewById(R.id.btn_right_click);
 
-        // Trackpad parmak hareketi yakalama (Delta X ve Y hesaplama)
         trackpad.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
@@ -36,11 +34,9 @@ public class MainActivity extends AppCompatActivity {
                     float dx = event.getX() - lastX;
                     float dy = event.getY() - lastY;
 
-                    // Değerleri byte sınırlarına (-127, 127) kısıtlıyoruz
                     byte moveX = (byte) Math.max(-127, Math.min(127, dx));
                     byte moveY = (byte) Math.max(-127, Math.min(127, dy));
 
-                    // Hareketi gönder
                     hidService.sendInput(currentButtons, moveX, moveY);
 
                     lastX = event.getX();
@@ -50,29 +46,26 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
 
-        // Sol Tık Butonu
         btnLeft.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                currentButtons |= 0x01; // Sol tık bitini aktif et (00000001)
+                currentButtons |= 0x01;
                 hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
             } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                currentButtons &= ~0x01; // Sol tık bitini kaldır
+                currentButtons &= ~0x01;
                 hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
             }
             return false;
         });
 
-        // Sağ Tık Butonu
         btnRight.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                currentButtons |= 0x02; // Sağ tık bitini aktif et (00000010)
+                currentButtons |= 0x02;
                 hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
             } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                currentButtons &= ~0x02; // Sağ tık bitini kaldır
+                currentButtons &= ~0x02;
                 hidService.sendInput(currentButtons, (byte) 0, (byte) 0);
             }
             return false;
         });
     }
 }
-
