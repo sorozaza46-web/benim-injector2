@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothHidDevice;
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.util.Log;
 
 @SuppressLint("MissingPermission")
 public class BluetoothHidService {
@@ -81,14 +82,21 @@ public class BluetoothHidService {
         }
     };
 
+    // TV ile el sıkışmayı ve fare sürücüsünü tetikleyen güvenli bağlantı metodu
     public void connectToDevice(BluetoothDevice device) {
+        if (device == null) return;
+        
+        // Eğer cihazla bağ henüz kurulmadıysa (Unut dediğimiz için) bağı zorla oluşturur
+        if (device.getBondState() == BluetoothDevice.BOND_NONE) {
+            device.createBond();
+        }
+        
         if (bluetoothHidDevice != null) {
             bluetoothHidDevice.connect(device);
             this.connectedDevice = device;
         }
     }
 
-    // Akış sonlandığında veya uygulama kapandığında TV bağlantısını koparır
     public void disconnectDevice() {
         if (bluetoothHidDevice != null && connectedDevice != null) {
             bluetoothHidDevice.disconnect(connectedDevice);
@@ -98,6 +106,7 @@ public class BluetoothHidService {
 
     public void sendInput(byte buttons, byte dx, byte dy) {
         if (bluetoothHidDevice != null && connectedDevice != null) {
+            // Rapor paketini TV'nin işletim sistemine doğrudan basıyoruz
             byte[] report = new byte[]{buttons, dx, dy, 0};
             bluetoothHidDevice.sendReport(connectedDevice, 0, report);
         }
