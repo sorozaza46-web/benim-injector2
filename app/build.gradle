@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId "com.yahya.hidmouse"
-        minSdk 28 // BluetoothHidDevice API için en az Android 9 (API 28) şarttır
+        minSdk 28
         targetSdk 34
         versionCode 1
         versionName "1.0"
